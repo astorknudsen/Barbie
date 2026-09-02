@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Barbie Movie Night Wheel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Poppins:wght@400;500;600&display=swap');
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(180deg, #FFE6F2 0%, #FFD1E8 100%);
+    min-height: 100vh;
+    color: #5A1140;
+    padding: 24px 16px 60px;
+  }
+
+  h1 {
+    font-family: 'Fredoka', sans-serif;
+    text-align: center;
+    font-size: 2.4rem;
+    color: #D6127D;
+    margin: 0 0 4px;
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(214,18,125,0.15);
+    letter-spacing: 0.5px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #9B2A6B;
+    font-size: 0.95rem;
+    margin-bottom: 28px;
+  }
+
+  .layout {
+    display: flex;
+    gap: 28px;
+    max-width: 1100px;
+    margin: 0 auto;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .wheel-panel {
+    flex: 1 1 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 480px;
+  }
+
+  .wheel-wrap {
+    position: relative;
+    width: 400px;
+    max-width: 90vw;
+    aspect-ratio: 1 / 1;
+    margin-bottom: 18px;
+  }
+
+  .pointer {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 18px solid transparent;
+    border-right: 18px solid transparent;
+    border-top: 32px solid #D6127D;
+    z-index: 5;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.25));
+  }
+
+  canvas#wheel {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    box-shadow: 0 0 0 8px #fff, 0 0 0 12px #F781BE, 0 10px 30px rgba(155,20,90,0.35);
+    display: block;
+  }
+
+  .hub {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 56px;
+    height: 56px;
+    background: radial-gradient(circle at 35% 30%, #FFF, #FFD9EC 40%, #D6127D 100%);
+    border: 3px solid #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 4;
+  }
+
+  button {
+    font-family: 'Fredoka', sans-serif;
+    cursor: pointer;
+    border: none;
+  }
+
+  #spinBtn {
+    background: linear-gradient(180deg, #FF5CA8, #D6127D);
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 600;
+    padding: 14px 42px;
+    border-radius: 999px;
+    box-shadow: 0 5px 0 #9B0B5C, 0 8px 14px rgba(0,0,0,0.25);
+    transition: transform 0.08s ease;
+    letter-spacing: 0.5px;
+  }
+  #spinBtn:active { transform: translateY(4px); box-shadow: 0 1px 0 #9B0B5C; }
+  #spinBtn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .result-banner {
+    margin-top: 18px;
+    min-height: 60px;
+    text-align: center;
+  }
+
+  .result-banner .title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 1.3rem;
+    color: #9B0B5C;
+    background: #fff;
+    display: inline-block;
+    padding: 10px 22px;
+    border-radius: 16px;
+    border: 2px dashed #F781BE;
+    box-shadow: 0 4px 10px rgba(155,20,90,0.15);
+  }
+
+  .list-panel {
+    flex: 1 1 340px;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 20px;
+    padding: 20px 20px 24px;
+    box-shadow: 0 10px 30px rgba(155,20,90,0.2);
+    border: 3px solid #FBD3E9;
+  }
+
+  .list-panel h2 {
+    font-family: 'Fredoka', sans-serif;
+    color: #D6127D;
+    font-size: 1.3rem;
+    margin: 0 0 4px;
+  }
+
+  .list-panel .counter {
+    font-size: 0.85rem;
+    color: #9B2A6B;
+    margin-bottom: 14px;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  .toolbar label, .toolbar button {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    background: #FFEAF5;
+    color: #B01572;
+    border: 1.5px solid #F9B8DA;
+    padding: 8px 12px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .toolbar label:hover, .toolbar button:hover { background: #FFD9EC; }
+  .toolbar input[type=file] { display: none; }
+
+  ul#movieList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 420px;
+    overflow-y: auto;
+  }
+
+  ul#movieList li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+    transition: background 0.2s;
+  }
+
+  ul#movieList li.unwatched { background: #FFF5FA; }
+  ul#movieList li.watched { background: #F3F3F3; color: #A9A6A6; text-decoration: line-through; }
+
+  ul#movieList li .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  ul#movieList li.unwatched .dot { background: #FF5CA8; }
+  ul#movieList li.watched .dot { background: #C7C7C7; }
+
+  ul#movieList li .name { flex: 1; }
+
+  ul#movieList li .watchedDate {
+    font-size: 0.7rem;
+    color: #B7A9B0;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #F9B8DA; border-radius: 10px; }
+
+  .music-bar {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    background: #fff;
+    border: 1.5px solid #F9B8DA;
+    border-radius: 999px;
+    padding: 8px 14px;
+  }
+
+  .music-bar button, .music-bar label {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    background: #FFEAF5;
+    color: #B01572;
+    border: 1.5px solid #F9B8DA;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .music-bar button:hover, .music-bar label:hover { background: #FFD9EC; }
+  .music-bar input[type=file] { display: none; }
+  .music-bar #musicLabel {
+    font-size: 0.72rem;
+    color: #B7A9B0;
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .music-bar input[type=range] { width: 80px; accent-color: #D6127D; }
+
+  .empty-note {
+    text-align: center;
+    color: #B01572;
+    font-size: 0.85rem;
+    padding: 20px 0;
+  }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Barbie Movie Night Wheel</h1>
+<p class="subtitle">Spin to pick tonight's movie &mdash; watched ones get crossed off automatically</p>
+
+<div class="layout">
+
+  <div class="wheel-panel">
+    <div class="wheel-wrap">
+      <div class="pointer"></div>
+      <canvas id="wheel" width="600" height="600"></canvas>
+      <div class="hub"></div>
+    </div>
+    <button id="spinBtn">Spin the wheel</button>
+    <div class="result-banner" id="resultBanner"></div>
+    <div class="music-bar">
+      <button id="musicToggle">Play music</button>
+      <span id="musicLabel">background-music.mp3</span>
+      <input type="range" id="volumeSlider" min="0" max="100" value="35">
+    </div>
+  </div>
+
+  <div class="list-panel">
+    <h2>Movie list</h2>
+    <div class="counter" id="counter"></div>
+    <div class="toolbar">
+      <label for="fileUpload">Upload list<input type="file" id="fileUpload" accept=".txt"></label>
+      <button id="downloadBtn">Download watched</button>
+      <button id="resetBtn">Reset all</button>
+    </div>
+    <ul id="movieList"></ul>
+  </div>
+
+</div>
+
+<script>
+const defaultMovies = [
+"Barbie in the Nutcracker",
+"Barbie as Rapunzel",
+"Barbie of Swan Lake",
+"Barbie as The Princess and the Pauper",
+"Barbie: Fairytopia",
+"Barbie and the Magic of Pegasus",
+"Barbie Diaries",
+"Barbie Fairytopia: Mermaidia",
+"Barbie in the 12 Dancing Princesses",
+"Barbie Fairytopia: Magic of the Rainbow",
+"Barbie as the Island Princess",
+"Barbie Mariposa and Her Butterfly Fairy Friends",
+"Barbie and the Diamond Castle",
+"Barbie in 'A Christmas Carol'",
+"Barbie Presents: Thumbelina",
+"Barbie and the Three Musketeers",
+"Sing Along with Barbie",
+"Barbie in a Mermaid Tale",
+"Barbie: A Fashion Fairytale",
+"Barbie: A Fairy Secret",
+"Barbie: Princess Charm School",
+"Barbie: A Perfect Christmas",
+"Barbie in a Mermaid Tale 2",
+"Barbie: The Princess & the Popstar",
+"Barbie in the Pink Shoes",
+"Barbie Mariposa and The Fairy Princess",
+"Barbie & Her Sisters in a Pony Tale",
+"Barbie: The Pearl Princess",
+"Barbie and the Secret Door",
+"Barbie in Princess Power",
+"Barbie in Rock 'N Royals",
+"Barbie & Her Sisters in the Great Puppy Adventure",
+"Barbie: Spy Squad",
+"Barbie: Star Light Adventure",
+"Barbie & Her Sisters in a Puppy Chase",
+"Barbie Video Game Hero",
+"Barbie: Dolphin Magic",
+"Barbie Princess Adventure",
+"Barbie & Chelsea: The Lost Birthday",
+"Barbie: Big City, Big Dreams"
+];
+
+const wheelColors = ["#FF5CA8", "#FFFFFF", "#FF8FC6", "#FDEEF6"];
+
+let movies = []; // { name, watched, date }
+
+function initMovies(names) {
+  movies = names.map(n => ({ name: n, watched: false, date: null }));
+}
+initMovies(defaultMovies);
+
+const listEl = document.getElementById('movieList');
+const counterEl = document.getElementById('counter');
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+const spinBtn = document.getElementById('spinBtn');
+const resultBanner = document.getElementById('resultBanner');
+let currentRotation = 0;
+let spinning = false;
+
+function unwatchedMovies() {
+  return movies.filter(m => !m.watched);
+}
+
+function renderList() {
+  listEl.innerHTML = '';
+  const watchedCount = movies.filter(m => m.watched).length;
+  counterEl.textContent = watchedCount + ' of ' + movies.length + ' watched';
+
+  if (movies.length === 0) {
+    listEl.innerHTML = '<div class="empty-note">No movies loaded. Upload a list to get started.</div>';
+    return;
+  }
+
+  movies.forEach(m => {
+    const li = document.createElement('li');
+    li.className = m.watched ? 'watched' : 'unwatched';
+    const dateStr = m.watched && m.date ? m.date : '';
+    li.innerHTML = '<span class="dot"></span><span class="name">' + escapeHtml(m.name) + '</span>' +
+      (m.watched ? '<span class="watchedDate">' + dateStr + '</span>' : '');
+    listEl.appendChild(li);
+  });
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function drawWheel() {
+  const size = canvas.width;
+  const cx = size / 2;
+  const cy = size / 2;
+  const radius = size / 2 - 6;
+  ctx.clearRect(0, 0, size, size);
+
+  const active = unwatchedMovies();
+
+  if (active.length === 0) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#FBD3E9';
+    ctx.fill();
+    ctx.fillStyle = '#B01572';
+    ctx.font = '600 22px Fredoka, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('All watched!', cx, cy);
+    return;
+  }
+
+  const sliceAngle = (Math.PI * 2) / active.length;
+
+  active.forEach((m, i) => {
+    const startAngle = i * sliceAngle;
+    const endAngle = startAngle + sliceAngle;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, startAngle, endAngle);
+    ctx.closePath();
+    ctx.fillStyle = wheelColors[i % wheelColors.length];
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(startAngle + sliceAngle / 2);
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#9B0B5C';
+    let fontSize = active.length > 24 ? 10 : active.length > 14 ? 12 : 14;
+    ctx.font = '500 ' + fontSize + 'px Poppins, sans-serif';
+    let label = m.name;
+    const maxChars = active.length > 24 ? 22 : 30;
+    if (label.length > maxChars) label = label.slice(0, maxChars - 1) + '…';
+    ctx.fillText(label, radius - 14, 0);
+    ctx.restore();
+  });
+}
+
+function spin() {
+  const active = unwatchedMovies();
+  if (active.length === 0 || spinning) return;
+  spinning = true;
+  spinBtn.disabled = true;
+  resultBanner.innerHTML = '';
+
+  const sliceAngle = 360 / active.length;
+  const winnerIndex = Math.floor(Math.random() * active.length);
+  const targetSliceCenter = winnerIndex * sliceAngle + sliceAngle / 2;
+  const extraSpins = 5 + Math.floor(Math.random() * 3);
+  const finalRotation = currentRotation + extraSpins * 360 + (360 - targetSliceCenter) - (currentRotation % 360);
+
+  const duration = 4200;
+  const startTime = performance.now();
+  const startRotation = currentRotation;
+  const delta = finalRotation - startRotation;
+
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function animate(now) {
+    const elapsed = now - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    const eased = easeOutCubic(t);
+    currentRotation = startRotation + delta * eased;
+    canvas.style.transform = 'rotate(' + currentRotation + 'deg)';
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      spinning = false;
+      spinBtn.disabled = false;
+      const winner = active[winnerIndex];
+      markWatched(winner.name);
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function markWatched(name) {
+  const m = movies.find(mv => mv.name === name);
+  if (!m) return;
+  m.watched = true;
+  const now = new Date();
+  m.date = now.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  renderList();
+  drawWheel();
+  resultBanner.innerHTML = '<div class="title">Tonight\'s pick: ' + escapeHtml(name) + '</div>';
+}
+
+document.getElementById('fileUpload').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const text = evt.target.result;
+    const lines = text.split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(l => l.length > 0)
+      .map(l => l.replace(/^\d+[\.\)]\s*/, ''));
+    if (lines.length === 0) return;
+    initMovies(lines);
+    currentRotation = 0;
+    canvas.style.transform = 'rotate(0deg)';
+    renderList();
+    drawWheel();
+    resultBanner.innerHTML = '';
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+document.getElementById('downloadBtn').addEventListener('click', function() {
+  const watched = movies.filter(m => m.watched);
+  let content = 'Barbie movies watched\n';
+  content += 'Downloaded: ' + new Date().toLocaleString() + '\n\n';
+  if (watched.length === 0) {
+    content += '(No movies watched yet)\n';
+  } else {
+    watched.forEach((m, i) => {
+      content += (i + 1) + '. ' + m.name + '  (watched ' + m.date + ')\n';
+    });
+  }
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'barbie_movies_watched.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('resetBtn').addEventListener('click', function() {
+  movies.forEach(m => { m.watched = false; m.date = null; });
+  currentRotation = 0;
+  canvas.style.transform = 'rotate(0deg)';
+  renderList();
+  drawWheel();
+  resultBanner.innerHTML = '';
+});
+
+spinBtn.addEventListener('click', spin);
+
+canvas.style.transformOrigin = '50% 50%';
+canvas.style.transition = 'none';
+
+renderList();
+drawWheel();
+
+const MUSIC_FILENAME = 'background-music.mp3';
+const bgMusic = new Audio(MUSIC_FILENAME);
+bgMusic.loop = true;
+bgMusic.volume = 0.35;
+
+const musicToggle = document.getElementById('musicToggle');
+const musicLabel = document.getElementById('musicLabel');
+const volumeSlider = document.getElementById('volumeSlider');
+let musicPlaying = false;
+
+musicToggle.addEventListener('click', function() {
+  if (!musicPlaying) {
+    bgMusic.play().then(function() {
+      musicPlaying = true;
+      musicToggle.textContent = 'Pause music';
+    }).catch(function() {
+      musicLabel.textContent = "Couldn't find " + MUSIC_FILENAME;
+    });
+  } else {
+    bgMusic.pause();
+    musicPlaying = false;
+    musicToggle.textContent = 'Play music';
+  }
+});
+
+volumeSlider.addEventListener('input', function() {
+  bgMusic.volume = volumeSlider.value / 100;
+});
+
+bgMusic.addEventListener('error', function() {
+  musicLabel.textContent = "Couldn't find " + MUSIC_FILENAME;
+});
+</script>
+
+</body>
+</html>
