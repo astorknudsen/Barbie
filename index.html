@@ -155,7 +155,13 @@
   .list-panel .counter {
     font-size: 0.85rem;
     color: #9B2A6B;
-    margin-bottom: 14px;
+    margin-bottom: 4px;
+  }
+
+  .list-panel .hint {
+    font-size: 0.75rem;
+    color: #C77FA6;
+    margin-bottom: 12px;
   }
 
   .toolbar {
@@ -200,8 +206,10 @@
     transition: background 0.2s;
   }
 
-  ul#movieList li.unwatched { background: #FFF5FA; }
-  ul#movieList li.watched { background: #F3F3F3; color: #A9A6A6; text-decoration: line-through; }
+  ul#movieList li.unwatched { background: #FFF5FA; cursor: pointer; }
+  ul#movieList li.unwatched:hover { background: #FFE3F0; }
+  ul#movieList li.watched { background: #F3F3F3; color: #A9A6A6; text-decoration: line-through; cursor: pointer; }
+  ul#movieList li.excluded { background: #F7F5F6; color: #B7A9B0; cursor: pointer; border: 1.5px dashed #E3C9D6; }
 
   ul#movieList li .dot {
     width: 9px;
@@ -211,6 +219,7 @@
   }
   ul#movieList li.unwatched .dot { background: #FF5CA8; }
   ul#movieList li.watched .dot { background: #C7C7C7; }
+  ul#movieList li.excluded .dot { background: #E3C9D6; }
 
   ul#movieList li .name { flex: 1; }
 
@@ -297,6 +306,7 @@
   <div class="list-panel">
     <h2>Movie list</h2>
     <div class="counter" id="counter"></div>
+    <div class="hint">Tap a title to add or remove it from the wheel</div>
     <div class="toolbar">
       <label for="fileUpload">Upload list<input type="file" id="fileUpload" accept=".txt"></label>
       <button id="downloadBtn">Download watched</button>
@@ -356,7 +366,7 @@ const wheelColors = ["#FF5CA8", "#FFFFFF", "#FF8FC6", "#FDEEF6"];
 let movies = []; // { name, watched, date }
 
 function initMovies(names) {
-  movies = names.map(n => ({ name: n, watched: false, date: null }));
+  movies = names.map(n => ({ name: n, watched: false, date: null, excluded: false }));
 }
 initMovies(defaultMovies);
 
@@ -370,27 +380,48 @@ let currentRotation = 0;
 let spinning = false;
 
 function unwatchedMovies() {
-  return movies.filter(m => !m.watched);
+  return movies.filter(m => !m.watched && !m.excluded);
 }
 
 function renderList() {
   listEl.innerHTML = '';
   const watchedCount = movies.filter(m => m.watched).length;
-  counterEl.textContent = watchedCount + ' of ' + movies.length + ' watched';
+  const inWheelCount = unwatchedMovies().length;
+  counterEl.textContent = watchedCount + ' of ' + movies.length + ' watched \u00b7 ' + inWheelCount + ' on the wheel';
 
   if (movies.length === 0) {
     listEl.innerHTML = '<div class="empty-note">No movies loaded. Upload a list to get started.</div>';
     return;
   }
 
-  movies.forEach(m => {
+  movies.forEach((m, idx) => {
     const li = document.createElement('li');
-    li.className = m.watched ? 'watched' : 'unwatched';
+    let cls = 'unwatched';
+    if (m.watched) cls = 'watched';
+    else if (m.excluded) cls = 'excluded';
+    li.className = cls;
+    li.dataset.idx = idx;
     const dateStr = m.watched && m.date ? m.date : '';
     li.innerHTML = '<span class="dot"></span><span class="name">' + escapeHtml(m.name) + '</span>' +
-      (m.watched ? '<span class="watchedDate">' + dateStr + '</span>' : '');
+      (m.watched ? '<span class="watchedDate">' + dateStr + '</span>' : '') +
+      (m.excluded ? '<span class="watchedDate">off wheel</span>' : '');
+    li.addEventListener('click', function() { toggleMovie(idx); });
     listEl.appendChild(li);
   });
+}
+
+function toggleMovie(idx) {
+  if (spinning) return;
+  const m = movies[idx];
+  if (m.watched) {
+    m.watched = false;
+    m.date = null;
+    m.excluded = false;
+  } else {
+    m.excluded = !m.excluded;
+  }
+  renderList();
+  drawWheel();
 }
 
 function escapeHtml(str) {
@@ -546,7 +577,7 @@ document.getElementById('downloadBtn').addEventListener('click', function() {
 });
 
 document.getElementById('resetBtn').addEventListener('click', function() {
-  movies.forEach(m => { m.watched = false; m.date = null; });
+  movies.forEach(m => { m.watched = false; m.date = null; m.excluded = false; });
   currentRotation = 0;
   canvas.style.transform = 'rotate(0deg)';
   renderList();
@@ -571,15 +602,32 @@ const musicToggle = document.getElementById('musicToggle');
 const musicLabel = document.getElementById('musicLabel');
 const volumeSlider = document.getElementById('volumeSlider');
 let musicPlaying = false;
+let autoplayAttempted = false;
+
+function startMusic() {
+  bgMusic.play().then(function() {
+    musicPlaying = true;
+    musicToggle.textContent = 'Pause music';
+  }).catch(function() {
+    musicLabel.textContent = "Couldn't find " + MUSIC_FILENAME;
+  });
+}
+
+function attemptAutoplay() {
+  if (autoplayAttempted) return;
+  autoplayAttempted = true;
+  startMusic();
+}
+
+window.addEventListener('load', attemptAutoplay);
+document.addEventListener('click', attemptAutoplay, { once: true });
+document.addEventListener('keydown', attemptAutoplay, { once: true });
+document.addEventListener('touchstart', attemptAutoplay, { once: true });
 
 musicToggle.addEventListener('click', function() {
+  autoplayAttempted = true;
   if (!musicPlaying) {
-    bgMusic.play().then(function() {
-      musicPlaying = true;
-      musicToggle.textContent = 'Pause music';
-    }).catch(function() {
-      musicLabel.textContent = "Couldn't find " + MUSIC_FILENAME;
-    });
+    startMusic();
   } else {
     bgMusic.pause();
     musicPlaying = false;
