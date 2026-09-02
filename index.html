@@ -501,6 +501,10 @@ function spin() {
   spinBtn.disabled = true;
   resultBanner.innerHTML = '';
 
+  if (!musicPlaying) {
+    startMusic();
+  }
+
   const sliceAngle = 360 / active.length;
   const winnerIndex = Math.floor(Math.random() * active.length);
   const targetSliceCenter = winnerIndex * sliceAngle + sliceAngle / 2;
@@ -681,7 +685,6 @@ const musicToggle = document.getElementById('musicToggle');
 const musicLabel = document.getElementById('musicLabel');
 const volumeSlider = document.getElementById('volumeSlider');
 let musicPlaying = false;
-let autoplayAttempted = false;
 
 function startMusic() {
   bgMusic.play().then(function() {
@@ -692,19 +695,7 @@ function startMusic() {
   });
 }
 
-function attemptAutoplay() {
-  if (autoplayAttempted) return;
-  autoplayAttempted = true;
-  startMusic();
-}
-
-window.addEventListener('load', attemptAutoplay);
-document.addEventListener('click', attemptAutoplay, { once: true });
-document.addEventListener('keydown', attemptAutoplay, { once: true });
-document.addEventListener('touchstart', attemptAutoplay, { once: true });
-
 musicToggle.addEventListener('click', function() {
-  autoplayAttempted = true;
   if (!musicPlaying) {
     startMusic();
   } else {
